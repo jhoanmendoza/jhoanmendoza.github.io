@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#101510">
+<title>Mi Uber Control</title>
+<style>
+:root{--bg:#101510;--panel:#1a211b;--panel2:#222b23;--green:#48d477;--text:#f4f7f4;--muted:#9aa69c;--red:#ff6565;--border:#303b32}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:Arial,sans-serif;min-height:100vh}
+header{padding:22px 5%;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:21px;font-weight:bold}.logo span{color:var(--green)}
+.container{width:92%;max-width:1100px;margin:25px auto}
+nav{display:flex;gap:10px;margin-bottom:25px;overflow-x:auto}
+nav button{background:var(--panel);border:1px solid var(--border);color:var(--muted);padding:12px 18px;border-radius:10px;cursor:pointer;white-space:nowrap}
+nav button.active{background:var(--green);color:#102016;border-color:var(--green);font-weight:bold}
+.page{display:none}.page.active{display:block}
+h2{margin-bottom:12px;font-size:22px}.subtitle{color:var(--muted);margin-bottom:20px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-bottom:20px}
+.card,.section{background:var(--panel);border:1px solid var(--border);border-radius:15px;padding:20px}
+.card small{color:var(--muted);display:block;margin-bottom:12px}.card strong{font-size:24px}
+.green{color:var(--green)}.red{color:var(--red)}
+.btn{background:var(--green);color:#102016;border:none;padding:13px 20px;border-radius:10px;font-weight:bold;cursor:pointer;font-size:14px}
+.btn-secondary{background:var(--panel2);color:var(--text);border:1px solid var(--border)}
+.btn-danger{background:#482323;color:#ffaaaa;border:1px solid #713b3b}
+form{display:grid;gap:15px;max-width:650px}
+label{display:block;font-size:14px;margin-bottom:8px;color:var(--muted)}
+input,select,textarea{width:100%;padding:13px;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:15px}
+textarea{resize:vertical}.row{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:560px}
+th,td{padding:13px 10px;text-align:left;border-bottom:1px solid var(--border);font-size:14px}
+th{color:var(--muted)}.actions{display:flex;gap:7px}.actions button{padding:7px 10px;border-radius:7px;cursor:pointer;border:1px solid var(--border)}
+.empty{color:var(--muted);text-align:center;padding:25px}
+footer{text-align:center;color:var(--muted);padding:30px;font-size:12px}
+.summary-line{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.summary-line:last-child{border-bottom:0}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+@media(max-width:650px){.cards{grid-template-columns:1fr 1fr}.cards .card:first-child{grid-column:span 2}.card strong{font-size:20px}.row,.two-col{grid-template-columns:1fr}header{padding:18px 4%}.container{width:94%}.section,.card{padding:16px}}
+</style>
+</head>
+<body>
+<header><div class="logo">🏍️ Mi Uber <span>Control</span></div><div style="color:var(--green);font-size:13px">● Personal</div></header>
+<main class="container">
+<nav>
+<button class="active" data-page="inicio">Inicio</button>
+<button data-page="registrar">+ Carrera</button>
+<button data-page="historial">Historial</button>
+<button data-page="gastos">+ Gastos</button>
+</nav>
+
+<section id="inicio" class="page active">
+<h2>Panel principal</h2><p class="subtitle" id="fechaActual"></p>
+<div class="cards">
+<div class="card"><small>💰 INGRESOS DE HOY</small><strong class="green" id="totalHoy">$0</strong></div>
+<div class="card"><small>🏁 CARRERAS HOY</small><strong id="cantidadHoy">0</strong></div>
+<div class="card"><small>📊 PROMEDIO POR CARRERA</small><strong id="promedioHoy">$0</strong></div>
+<div class="card"><small>🧾 GASTOS DE HOY</small><strong class="red" id="gastosHoy">$0</strong></div>
+<div class="card"><small>💵 GANANCIA DESPUÉS DE GASTOS</small><strong class="green" id="netoHoy">$0</strong></div>
+<div class="card"><small>🪙 BASE INICIAL</small><strong id="baseResumen">$0</strong></div>
+</div>
+
+<div class="section" style="margin-bottom:18px">
+<h2>Base inicial del día</h2>
+<p class="subtitle">Dinero que llevas para dar vueltas y devolver cambio. No cuenta como ingreso.</p>
+<div class="row">
+<div><label>¿Con cuánto dinero empiezas hoy?</label><input type="number" id="baseDia" min="0" step="1" placeholder="Ejemplo: 30000"></div>
+<div style="display:flex;align-items:end"><button class="btn" onclick="guardarBase()">Guardar base</button></div>
+</div>
+<p id="mensajeBase" class="green" style="font-size:13px;margin-top:10px"></p>
+</div>
+
+<div class="two-col">
+<div class="section">
+<h2>Dinero recibido hoy</h2>
+<div class="summary-line"><span>💵 Efectivo</span><strong id="efectivoHoy">$0</strong></div>
+<div class="summary-line"><span>📱 Nequi</span><strong id="nequiHoy">$0</strong></div>
+<div class="summary-line"><span>🏦 Transferencias</span><strong id="transferenciaHoy">$0</strong></div>
+<div class="summary-line"><strong>Total recibido</strong><strong class="green" id="totalPagos">$0</strong></div>
+</div>
+<div class="section">
+<h2>Dinero en efectivo</h2>
+<div class="summary-line"><span>Base inicial</span><strong id="baseEfectivo">$0</strong></div>
+<div class="summary-line"><span>+ Carreras en efectivo</span><strong id="entradasEfectivo">$0</strong></div>
+<div class="summary-line"><span>− Gastos pagados en efectivo</span><strong id="salidasEfectivo">$0</strong></div>
+<div class="summary-line"><strong>Efectivo estimado</strong><strong class="green" id="efectivoDisponible">$0</strong></div>
+</div>
+</div>
+<div class="section" style="margin-top:18px">
+<h2>Últimas carreras de hoy</h2><div id="ultimasCarreras"></div><br>
+<button class="btn" onclick="mostrarPagina('registrar')">+ Registrar carrera</button>
+</div>
+</section>
+
+<section id="registrar" class="page">
+<h2 id="tituloFormulario">Registrar carrera</h2><p class="subtitle">Ingresa los datos de tu servicio.</p>
+<div class="section">
+<form id="formCarrera">
+<div><label>Valor de la carrera (COP)</label><input type="number" id="valor" min="1" step="1" placeholder="Ejemplo: 8500" required></div>
+<div class="row">
+<div><label>Fecha</label><input type="date" id="fecha" required></div>
+<div><label>Hora de registro</label><input type="time" id="hora" required></div>
+</div>
+<div><label>Medio de pago</label><select id="pago" required><option>Efectivo</option><option>Nequi</option><option>Transferencia bancaria</option></select></div>
+<div><label>Observaciones (opcional)</label><textarea id="observacion" rows="3" placeholder="Información adicional..."></textarea></div>
+<div class="actions"><button type="submit" class="btn" id="btnGuardar">Guardar carrera</button><button type="button" class="btn btn-secondary" onclick="cancelarEdicion()" id="btnCancelar" style="display:none">Cancelar</button></div>
+</form>
+</div>
+</section>
+
+<section id="historial" class="page">
+<h2>Historial de carreras</h2><p class="subtitle">Consulta, edita o elimina tus servicios.</p>
+<div class="section"><label>Buscar por fecha</label><input type="date" id="filtroFecha"><br><br><button class="btn btn-secondary" onclick="limpiarFiltro()">Ver todas</button><br><br><div id="tablaHistorial"></div></div>
+</section>
+
+<section id="gastos" class="page">
+<h2>Registrar gastos</h2><p class="subtitle">Anota gasolina, comida y cualquier gasto del día.</p>
+<div class="section">
+<form id="formGasto">
+<div><label>Valor del gasto (COP)</label><input type="number" id="valorGasto" min="1" step="1" placeholder="Ejemplo: 5000" required></div>
+<div class="row">
+<div><label>Categoría</label><select id="categoriaGasto"><option>Gasolina</option><option>Alimentación</option><option>Agua / bebidas</option><option>Parqueadero</option><option>Mantenimiento</option><option>Otros</option></select></div>
+<div><label>¿Cómo pagaste?</label><select id="pagoGasto"><option>Efectivo</option><option>Nequi</option><option>Transferencia bancaria</option></select></div>
+</div>
+<div class="row">
+<div><label>Fecha</label><input type="date" id="fechaGasto" required></div>
+<div><label>Hora</label><input type="time" id="horaGasto" required></div>
+</div>
+<div><label>Descripción (opcional)</label><input type="text" id="descripcionGasto" placeholder="Ejemplo: un pan y un café"></div>
+<button type="submit" class="btn">Guardar gasto</button>
+</form>
+</div>
+<div class="section" style="margin-top:18px">
+<h2>Historial de gastos</h2>
+<label>Filtrar gastos por fecha</label><input type="date" id="filtroGasto">
+<br><br><button class="btn btn-secondary" onclick="limpiarFiltroGasto()">Ver todos</button>
+<br><br><div id="tablaGastos"></div>
+</div>
+</section>
+</main>
+<footer>Mi Uber Control · Tus ingresos bajo control 🏍️</footer>
+
+<script>
+const CLAVE_CARRERAS="mi_uber_control_carreras";
+const CLAVE_GASTOS="mi_uber_control_gastos";
+const CLAVE_BASES="mi_uber_control_bases";
+let carreras=JSON.parse(localStorage.getItem(CLAVE_CARRERAS)||"[]");
+let gastos=JSON.parse(localStorage.getItem(CLAVE_GASTOS)||"[]");
+let bases=JSON.parse(localStorage.getItem(CLAVE_BASES)||"{}");
+let editando=null;
+
+function guardarDatos(){
+ localStorage.setItem(CLAVE_CARRERAS,JSON.stringify(carreras));
+ localStorage.setItem(CLAVE_GASTOS,JSON.stringify(gastos));
+ localStorage.setItem(CLAVE_BASES,JSON.stringify(bases));
+}
+function dinero(v){return Number(v||0).toLocaleString("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0});}
+function fechaLocal(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
+function horaLocal(){const d=new Date();return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;}
+function fechaBonita(f){const [a,m,d]=f.split("-");return `${d}/${m}/${a}`;}
+function idNuevo(){return window.crypto?.randomUUID?.()||String(Date.now())+Math.random();}
+function escapar(t){return String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>mostrarPagina(b.dataset.page)));
+function mostrarPagina(p){
+ document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+ document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===p));
+ document.getElementById(p).classList.add("active");
+ if(p==="inicio")actualizarInicio();
+ if(p==="historial")actualizarHistorial();
+ if(p==="gastos")actualizarGastos();
+ if(p==="registrar"&&editando===null)prepararFormulario();
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+function prepararFormulario(){
+ document.getElementById("formCarrera").reset();
+ document.getElementById("fecha").value=fechaLocal();
+ document.getElementById("hora").value=horaLocal();
+ document.getElementById("tituloFormulario").textContent="Registrar carrera";
+ document.getElementById("btnGuardar").textContent="Guardar carrera";
+ document.getElementById("btnCancelar").style.display="none";
+}
+function guardarBase(){
+ const valor=Number(document.getElementById("baseDia").value);
+ if(!Number.isSafeInteger(valor)||valor<0){alert("Ingresa una base válida.");return;}
+ bases[fechaLocal()]=valor;guardarDatos();actualizarInicio();
+ document.getElementById("mensajeBase").textContent="Base inicial guardada para hoy.";
+}
+document.getElementById("formCarrera").addEventListener("submit",e=>{
+ e.preventDefault();
+ const valor=Number(document.getElementById("valor").value);
+ const fecha=document.getElementById("fecha").value,hora=document.getElementById("hora").value;
+ if(!Number.isSafeInteger(valor)||valor<=0){alert("Ingresa un valor válido.");return;}
+ if(!fecha||!hora){alert("Completa fecha y hora.");return;}
+ const carrera={id:editando??idNuevo(),valor,fecha,hora,pago:document.getElementById("pago").value,observacion:document.getElementById("observacion").value.trim()};
+ if(editando!==null){const i=carreras.findIndex(c=>c.id===editando);if(i!==-1)carreras[i]=carrera;}
+ else carreras.push(carrera);
+ guardarDatos();editando=null;prepararFormulario();actualizarInicio();mostrarPagina("inicio");
+});
+document.getElementById("formGasto").addEventListener("submit",e=>{
+ e.preventDefault();
+ const valor=Number(document.getElementById("valorGasto").value);
+ if(!Number.isSafeInteger(valor)||valor<=0){alert("Ingresa un valor válido.");return;}
+ gastos.push({id:idNuevo(),valor,categoria:document.getElementById("categoriaGasto").value,pago:document.getElementById("pagoGasto").value,fecha:document.getElementById("fechaGasto").value,hora:document.getElementById("horaGasto").value,descripcion:document.getElementById("descripcionGasto").value.trim()});
+ guardarDatos();document.getElementById("formGasto").reset();prepararFormularioGasto();actualizarGastos();actualizarInicio();
+ alert("¡Gasto guardado correctamente!");
+});
+function prepararFormularioGasto(){document.getElementById("fechaGasto").value=fechaLocal();document.getElementById("horaGasto").value=horaLocal();}
+function actualizarInicio(){
+ const hoy=fechaLocal(),cs=carreras.filter(c=>c.fecha===hoy),gs=gastos.filter(g=>g.fecha===hoy);
+ const suma=arr=>arr.reduce((s,x)=>s+x.valor,0);
+ const ingresos=suma(cs),totalGastos=suma(gs),base=Number(bases[hoy]||0);
+ const porPago=p=>suma(cs.filter(c=>c.pago===p));
+ const gastoEfectivo=suma(gs.filter(g=>g.pago==="Efectivo"));
+ document.getElementById("fechaActual").textContent=new Date().toLocaleDateString("es-CO",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+ document.getElementById("totalHoy").textContent=dinero(ingresos);
+ document.getElementById("cantidadHoy").textContent=cs.length;
+ document.getElementById("promedioHoy").textContent=dinero(cs.length?ingresos/cs.length:0);
+ document.getElementById("gastosHoy").textContent=dinero(totalGastos);
+ document.getElementById("netoHoy").textContent=dinero(ingresos-totalGastos);
+ document.getElementById("baseResumen").textContent=dinero(base);
+ document.getElementById("baseDia").value=base;
+ document.getElementById("efectivoHoy").textContent=dinero(porPago("Efectivo"));
+ document.getElementById("nequiHoy").textContent=dinero(porPago("Nequi"));
+ document.getElementById("transferenciaHoy").textContent=dinero(porPago("Transferencia bancaria"));
+ document.getElementById("totalPagos").textContent=dinero(ingresos);
+ document.getElementById("baseEfectivo").textContent=dinero(base);
+ document.getElementById("entradasEfectivo").textContent=dinero(porPago("Efectivo"));
+ document.getElementById("salidasEfectivo").textContent=dinero(gastoEfectivo);
+ document.getElementById("efectivoDisponible").textContent=dinero(base+porPago("Efectivo")-gastoEfectivo);
+ const recientes=[...cs].sort((a,b)=>b.hora.localeCompare(a.hora)).slice(0,5);
+ document.getElementById("ultimasCarreras").innerHTML=recientes.length?`<div class="table-wrap"><table><thead><tr><th>Hora</th><th>Pago</th><th>Valor</th></tr></thead><tbody>${recientes.map(c=>`<tr><td>${c.hora}</td><td>${escapar(c.pago)}</td><td class="green">${dinero(c.valor)}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no tienes carreras registradas hoy.</div>';
+}
+function actualizarHistorial(){
+ const f=document.getElementById("filtroFecha").value;
+ const lista=carreras.filter(c=>!f||c.fecha===f).sort((a,b)=>b.fecha.localeCompare(a.fecha)||b.hora.localeCompare(a.hora));
+ const total=lista.reduce((s,c)=>s+c.valor,0),box=document.getElementById("tablaHistorial");
+ if(!lista.length){box.innerHTML='<div class="empty">No hay carreras para mostrar.</div>';return;}
+ box.innerHTML=`<p style="margin-bottom:15px"><span class="green">Total: ${dinero(total)}</span> · ${lista.length} carreras</p><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Hora</th><th>Pago</th><th>Valor</th><th>Acciones</th></tr></thead><tbody>${lista.map(c=>`<tr><td>${fechaBonita(c.fecha)}</td><td>${c.hora}</td><td>${escapar(c.pago)}</td><td class="green">${dinero(c.valor)}</td><td><div class="actions"><button class="btn-secondary" onclick="editarCarrera('${c.id}')">✏️</button><button class="btn-danger" onclick="eliminarCarrera('${c.id}')">🗑️</button></div></td></tr>`).join("")}</tbody></table></div>`;
+}
+document.getElementById("filtroFecha").addEventListener("change",actualizarHistorial);
+function limpiarFiltro(){document.getElementById("filtroFecha").value="";actualizarHistorial();}
+function editarCarrera(id){
+ const c=carreras.find(x=>x.id===id);if(!c)return;editando=id;
+ document.getElementById("valor").value=c.valor;document.getElementById("fecha").value=c.fecha;document.getElementById("hora").value=c.hora;document.getElementById("pago").value=c.pago;document.getElementById("observacion").value=c.observacion||"";
+ document.getElementById("tituloFormulario").textContent="Editar carrera";document.getElementById("btnGuardar").textContent="Guardar cambios";document.getElementById("btnCancelar").style.display="inline-block";mostrarPagina("registrar");
+}
+function cancelarEdicion(){editando=null;prepararFormulario();mostrarPagina("historial");}
+function eliminarCarrera(id){if(!confirm("¿Seguro que deseas eliminar esta carrera?"))return;carreras=carreras.filter(c=>c.id!==id);guardarDatos();actualizarHistorial();actualizarInicio();}
+function actualizarGastos(){
+ const f=document.getElementById("filtroGasto").value;
+ const lista=gastos.filter(g=>!f||g.fecha===f).sort((a,b)=>b.fecha.localeCompare(a.fecha)||b.hora.localeCompare(a.hora));
+ const total=lista.reduce((s,g)=>s+g.valor,0),box=document.getElementById("tablaGastos");
+ if(!lista.length){box.innerHTML='<div class="empty">No hay gastos para mostrar.</div>';return;}
+ box.innerHTML=`<p style="margin-bottom:15px"><span class="red">Total: ${dinero(total)}</span> · ${lista.length} gastos</p><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Hora</th><th>Categoría</th><th>Descripción</th><th>Pago</th><th>Valor</th><th></th></tr></thead><tbody>${lista.map(g=>`<tr><td>${fechaBonita(g.fecha)}</td><td>${g.hora}</td><td>${escapar(g.categoria)}</td><td>${escapar(g.descripcion||"-")}</td><td>${escapar(g.pago)}</td><td class="red">${dinero(g.valor)}</td><td><button class="btn-danger" onclick="eliminarGasto('${g.id}')">🗑️</button></td></tr>`).join("")}</tbody></table></div>`;
+}
+document.getElementById("filtroGasto").addEventListener("change",actualizarGastos);
+function limpiarFiltroGasto(){document.getElementById("filtroGasto").value="";actualizarGastos();}
+function eliminarGasto(id){if(!confirm("¿Seguro que deseas eliminar este gasto?"))return;gastos=gastos.filter(g=>g.id!==id);guardarDatos();actualizarGastos();actualizarInicio();}
+
+prepararFormulario();prepararFormularioGasto();actualizarInicio();
+</script>
+</body>
+</html>
